@@ -6,6 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx --watch --env-file .env src/server.ts",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",
@@ -17,6 +19,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@prisma/client": "^7.7.0",
     "@types/express": "^5.0.6",
     "express": "^5.2.1",
     "typescript": "^6.0.2"
@@ -29,6 +32,7 @@
     "globals": "^17.4.0",
     "jiti": "^2.6.1",
     "prettier": "^3.8.1",
+    "prisma": "^7.7.0",
     "tsx": "^4.21.0",
     "typescript-eslint": "^8.58.0"
   }

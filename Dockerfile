@@ -13,6 +13,9 @@ RUN npm install
 # Copia o restante dos arquivos do projeto
 COPY . .
 
+# 3. GERA O CLIENT DO PRISMA
+RUN npx prisma generate
+
 # Expõe a porta que a aplicação usa (ex: 3000)
 EXPOSE 3333
 
