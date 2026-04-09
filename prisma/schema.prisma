@@ -11,3 +11,102 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String @db.VarChar(100)
+  email    String @unique @db.VarChar(150)
+  password String @db.VarChar(255)
+  role     Role   @default(MEMBER)
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  teamMembers   TeamMember[]
+  tasks         Task[]
+  taskHistories TaskHistory[]
+
+  @@map("users")
+}
+
+model Team {
+  id          String @id @default(uuid())
+  name        String
+  description String
+
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime?    @updatedAt @map("updated_at")
+  teamMembers TeamMember[]
+  tasks       Task[]
+
+  @@map("teams")
+}
+
+model TeamMember {
+  id     String @id @default(uuid())
+  teamId String
+  userId String
+
+  user User @relation(fields: [userId], references: [id])
+  team Team @relation(fields: [teamId], references: [id])
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  @@map("team_members")
+}
+
+model Task {
+  id          String @id @default(uuid())
+  title       String
+  description String
+
+  status   TaskStatus @default(PENDING)
+  priority Priority   @default(MEDIUM)
+
+  assignedUserId String
+  assignedUser   User   @relation(fields: [assignedUserId], references: [id])
+
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime?     @updatedAt @map("updated_at")
+  taskHistories TaskHistory[]
+
+  @@map("tasks")
+}
+
+model TaskHistory {
+  id String @id @default(uuid())
+
+  changedById String
+  changedBy   User   @relation(fields: [changedById], references: [id])
+
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
+
+  oldStatus TaskStatus
+  newStatus TaskStatus
+
+  changedAt DateTime @default(now()) @map("changed_at")
+
+  @@map("task_histories")
+}
