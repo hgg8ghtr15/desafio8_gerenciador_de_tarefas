@@ -1,13 +1,12 @@
 import express from 'express';
 import { router } from './routes';
+import { errorHandling } from './middlewares/error-handling';
 
 const app = express();
 
 app.use(express.json());
 app.use(router);
 
-app.get('/', (req, res) => {
-    return res.json({ message: 'Hello World!' });
-});
+app.use(errorHandling);
 
 export { app };
