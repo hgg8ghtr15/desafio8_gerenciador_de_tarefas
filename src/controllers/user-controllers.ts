@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../database/prisma";
 import { AppError } from "../utils/AppError";
+import bcrypt from "bcrypt";
 
 /*
   id       String @id @default (uuid())
@@ -43,19 +44,23 @@ class UserController {
 
         await userExists(email);
 
+        const hashedPassword = await bcrypt.hash(password, 10);
+
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
-                password,
+                password: hashedPassword,
                 role,
             },
         })
 
-        return res.json({ message: "Usuário inserido com Sucesso", user });
+        const { password: _, ...userWithoutPassword } = user;
+
+        return res.json({ message: "Usuário inserido com Sucesso", user: userWithoutPassword });
     }
 
 
 }
 
-export { UserController };
+export { UserController, userExists };
