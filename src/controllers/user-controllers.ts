@@ -60,7 +60,43 @@ class UserController {
         return res.json({ message: "Usuário inserido com Sucesso", user: userWithoutPassword });
     }
 
+    async index(req: Request, res: Response) {
+        const users = await prisma.user.findMany();
+        return res.json(users);
+    }
 
+    async updatePerfil(req: Request, res: Response) {
+        const bodySchema = z.object({
+            email: z.email("Deve ser um email valido"),
+            role: z.enum(["ADMIN", "MEMBER"]),
+        })
+
+        const { email, role } = bodySchema.parse(req.body)
+
+        const userExists = await prisma.user.findUnique({
+            where: {
+                email,
+            },
+        })
+
+        if (!userExists) {
+            throw new AppError("Email não cadastrado", 400);
+        }
+
+        const user = await prisma.user.update({
+            where: {
+                email
+            },
+            data: {
+                role
+            },
+        })
+
+        const { password: _, ...userWithoutPassword } = user;
+
+        return res.json({ message: "Usuário atualizado com Sucesso", user: userWithoutPassword });
+
+    }
 }
 
 export { UserController, userExists };

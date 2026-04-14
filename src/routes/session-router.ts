@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { SessionController } from "../controllers/sessions-controller";
+import { ensureAuthenticated } from "../middlewares/VerifyAuthenticated";
 
 const sessionRouter = Router();
 
