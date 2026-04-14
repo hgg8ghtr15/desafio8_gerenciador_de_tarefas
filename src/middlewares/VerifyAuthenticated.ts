@@ -10,7 +10,7 @@ interface TokenPayload {
 }
 
 //ensureAuthenticated = garantirAutenticado
-export function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
+export function VerifyAuthenticated(req: Request, res: Response, next: NextFunction) {
     // Tenta pegar o cabeçalho de autorização da requisição
     const authHeader = req.headers.authorization;
 

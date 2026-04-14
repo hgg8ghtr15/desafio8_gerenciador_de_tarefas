@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/AppError";
 
-export function VerifyAuthenticated(roles: string[]) {
+export function VerifyUserAuthorization(roles: string[]) {
     return (req: Request, res: Response, next: NextFunction) => {
         const user = req.user;
         if (!user) {
