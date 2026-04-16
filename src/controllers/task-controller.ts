@@ -4,42 +4,6 @@ import { z } from "zod";
 import { AppError } from "../utils/AppError";
 import { TaskStatus, Priority } from "../generated/prisma";
 
-//   Task
-//   id          String @id @default(uuid())
-//   title       String
-//   description String
-
-//   status   TaskStatus @default(PENDING)
-//   priority Priority   @default(MEDIUM)
-
-//   assignedUserId String
-//   assignedUser   User   @relation(fields: [assignedUserId], references: [id])
-
-//   teamId String
-//   team   Team   @relation(fields: [teamId], references: [id])
-
-//   createdAt     DateTime      @default(now()) @map("created_at")
-//   updatedAt     DateTime?     @updatedAt @map("updated_at")
-//   taskHistories TaskHistory[]
-
-//   TaskHistory
-//   id String @id @default(uuid())
-
-//   changedById String
-//   changedBy   User   @relation(fields: [changedById], references: [id])
-
-//   taskId String
-//   task   Task   @relation(fields: [taskId], references: [id])
-
-//   oldStatus TaskStatus
-//   newStatus TaskStatus
-
-//   changedAt DateTime @default(now()) @map("changed_at")
-
-//   @@map("task_histories")
-
-// Dica 1: Extrair a validação (Zod) para o escopo do arquivo poupa recriação
-// desse objeto cada vez que a rota é chamada.
 const bodySchema = z.object({
     title: z.string().min(1, "Título inválido"),
     description: z.string().min(1, "Descrição inválida"),
@@ -71,19 +35,36 @@ const querySchema = z.object({
     priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
 });
 
+const validateUserAndTeam = async (assignedUserId: string, teamId: string) => {
+    const [teamExists, userExists] = await Promise.all([
+        prisma.team.findUnique({ where: { id: teamId } }),
+        prisma.user.findUnique({ where: { id: assignedUserId } })
+    ]);
+
+    if (!teamExists) throw new AppError("Team não encontrado", 404);
+    if (!userExists) throw new AppError("Usuário não encontrado", 404);
+}
+
+const validateTaskExists = async (id: string) => {
+    const taskExists = await prisma.task.findUnique({ where: { id } });
+    if (!taskExists) throw new AppError("Tarefa não encontrada", 404);
+    return taskExists;
+}
+
 class TaskController {
     async create(req: Request, res: Response) {
         const { title, description, status, priority, assignedUserId, teamId } = bodySchema.parse(req.body);
-        console.log(status)
+
+        await validateUserAndTeam(assignedUserId, teamId);
 
         // Dica 2: "Promise.all" executa buscas no banco ao mesmo tempo (em paralelo).
-        const [teamExists, userExists] = await Promise.all([
-            prisma.team.findUnique({ where: { id: teamId } }),
-            prisma.user.findUnique({ where: { id: assignedUserId } })
-        ]);
+        // const [teamExists, userExists] = await Promise.all([
+        //     prisma.team.findUnique({ where: { id: teamId } }),
+        //     prisma.user.findUnique({ where: { id: assignedUserId } })
+        // ]);
 
-        if (!teamExists) throw new AppError("Team não encontrado", 404);
-        if (!userExists) throw new AppError("Usuário não encontrado", 404);
+        // if (!teamExists) throw new AppError("Team não encontrado", 404);
+        // if (!userExists) throw new AppError("Usuário não encontrado", 404);
 
         const task = await prisma.task.create({
             data: {
@@ -126,13 +107,7 @@ class TaskController {
         const { id } = paramSchema.parse(req.params);
         const data = updateSchema.parse(req.body);
 
-        const taskExists = await prisma.task.findUnique({
-            where: { id }
-        });
-
-        if (!taskExists) {
-            throw new AppError("Tarefa não encontrada", 404);
-        }
+        const taskExists = await validateTaskExists(id);
 
         // Se houver tentativa de atualizar time ou usuário, validar se o novo registro existe
         if (data.teamId || data.assignedUserId) {
@@ -179,13 +154,7 @@ class TaskController {
     async delete(req: Request, res: Response) {
         const { id } = paramSchema.parse(req.params);
 
-        const taskExists = await prisma.task.findUnique({
-            where: { id }
-        });
-
-        if (!taskExists) {
-            throw new AppError("Tarefa não encontrada", 404);
-        }
+        await validateTaskExists(id);
 
         const task = await prisma.task.delete({
             where: { id }
@@ -200,8 +169,7 @@ class TaskController {
         const { userId } = assignSchema.parse(req.body);
 
         // 1. Verifica se a tarefa existe
-        const taskExists = await prisma.task.findUnique({ where: { id } });
-        if (!taskExists) throw new AppError("Tarefa não encontrada", 404);
+        const taskExists = await validateTaskExists(id);
 
         // 2. Verifica se o usuário destino existe
         const userExists = await prisma.user.findUnique({ where: { id: userId } });
@@ -223,17 +191,6 @@ class TaskController {
             throw new AppError("Você não pertence ao time desta tarefa", 403);
         }
 
-        // 5. Verifica se o usuário destino também é membro do mesmo time
-        const targetUserInTeam = await prisma.teamMember.findFirst({
-            where: {
-                teamId: taskExists.teamId,
-                userId,
-            },
-        });
-        if (!targetUserInTeam) {
-            throw new AppError("O usuário não pertence ao time desta tarefa", 403);
-        }
-
         // 6. Atribui a tarefa
         const task = await prisma.task.update({
             where: { id },
@@ -243,32 +200,6 @@ class TaskController {
         return res.json({ message: "Tarefa atribuída com sucesso!", task });
     }
 
-    async history(req: Request, res: Response) {
-        const { id } = paramSchema.parse(req.params);
-
-        const taskExists = await prisma.task.findUnique({
-            where: { id }
-        });
-
-        if (!taskExists) {
-            throw new AppError("Tarefa não encontrada", 404);
-        }
-
-        const history = await prisma.taskHistory.findMany({
-            where: { taskId: id },
-            include: {
-                changedBy: {
-                    select: {
-                        name: true,
-                        role: true
-                    }
-                }
-            },
-            orderBy: { changedAt: "desc" }
-        });
-
-        return res.json({ message: "Histórico da tarefa recuperado!", history });
-    }
 }
 
 export { TaskController };

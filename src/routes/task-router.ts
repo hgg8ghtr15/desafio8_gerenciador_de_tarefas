@@ -14,6 +14,6 @@ taskRouter.get("/task", taskController.index);
 taskRouter.put("/task/:id", taskController.update);
 taskRouter.delete("/task/:id", taskController.delete);
 taskRouter.patch("/task/:id/assign", taskController.assign);
-taskRouter.get("/task/:id/history", taskController.history);
+
 
 export { taskRouter };

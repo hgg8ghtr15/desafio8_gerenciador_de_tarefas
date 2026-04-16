@@ -5,6 +5,7 @@ import { sessionRouter } from "./session-router";
 import { teamRouter } from "./team-router";
 import { teamMemberRouter } from "./teamMember-router";
 import { taskRouter } from "./task-router";
+import { historyTaskRouter } from "./historyTask.router";
 
 
 const router = Router();
@@ -14,6 +15,7 @@ router.use(sessionRouter);
 router.use(teamRouter);
 router.use(teamMemberRouter);
 router.use(taskRouter);
+router.use(historyTaskRouter);
 
 
 export { router };
